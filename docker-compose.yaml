@@ -1,0 +1,69 @@
+name: bigdata_fundamentals_project
+
+services:
+  kestra:
+    image: kestra/kestra:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kestra_new
+    command: server local
+    restart: unless-stopped
+    ports:
+      - "9000:8080"       # Kestra UI
+    networks:
+      - backend
+
+  spark-master-new:
+    image: bitnami/spark:3.5
+    container_name: spark-master-new
+    restart: unless-stopped
+    environment:
+      - SPARK_MODE=master
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - "7078:7077"       # Spark master endpoint (đổi cổng tránh đụng container cũ)
+      - "9001:8080"       # Spark master UI
+    networks:
+      - backend
+
+  spark-worker-new:
+    image: bitnami/spark:3.5
+    container_name: spark-worker-new
+    restart: unless-stopped
+    environment:  
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master-new:7077   # trỏ theo service name
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_NO_DAEMONIZE=true
+    depends_on:
+      - spark-master-new
+    ports:
+      - "9002:8081"       # Spark worker UI
+    networks:
+      - backend
+
+  jupyter:
+    image: jupyter/pyspark-notebook:python-3.11
+    container_name: jupyter_new
+    restart: unless-stopped
+    user: root
+    environment:
+      JUPYTER_TOKEN: de
+      JUPYTER_ENABLE_LAB: "yes"
+      SPARK_MASTER: "spark://spark-master-new:7077"
+      PYSPARK_SUBMIT_ARGS: "--master spark://spark-master-new:7077 pyspark-shell"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/work/data
+    ports:
+      - "9003:8888"       # JupyterLab UI
+    depends_on:
+      - spark-master-new
+      - spark-worker-new
+    networks:
+      - backend
+
+networks:
+  backend:
