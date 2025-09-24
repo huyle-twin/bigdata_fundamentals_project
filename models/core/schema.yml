@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  - name: dim_customer
+    columns:
+      - name: customer_id
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+          - relationships:
+              to: ref('fact_sales')
+              field: customer_id
+              severity: warn
+
+      - name: customer_full_name
+        tests:
+          - not_null:
+              severity: warn
+      - name: customer_email
+      - name: customer_gender
+      - name: customer_region
+      - name: customer_signup_date
+
+  - name: dim_store
+    columns:
+      - name: store_id
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+          - relationships:
+              to: ref('fact_sales')
+              field: store_id
+              severity: warn
+      - name: store_name
+        tests:
+          - not_null:
+              severity: warn
+      - name: store_region
+        tests:
+          - not_null:
+              severity: warn
+      - name: store_rating
+
+  - name: dim_product
+    columns:
+      - name: product_sku
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+          - relationships:
+              to: ref('fact_sales')
+              field: product_sku
+              severity: warn
+          
+      - name: product_name
+        tests:
+          - not_null:
+              severity: warn
+      - name: brand
+        tests:
+          - not_null:
+              severity: warn
+      - name: category_name
+        tests:
+          - not_null:
+              severity: warn
+          # - relationships:
+          #     to: ref('dim_department')
+          #     field: category_name
+          #     severity: warn
+
+      - name: list_price
+      - name: color
+      - name: weight_g
+
+  - name: dim_department
+    columns:
+      - name: category_name
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+          # - relationships:
+          #     to: ref('dim_product')
+          #     field: category_name
+          #     severity: warn
+      - name: department_name
+        tests:
+          - not_null:
+              severity: warn
+
+  - name: dim_order
+    columns:
+      - name: order_id
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+          - relationships:
+              to: ref('fact_sales')
+              field: order_id
+              severity: warn
+
+      - name: order_datetime
+      - name: order_status
+      - name: coupon_code
+
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+          - relationships:
+              to: ref('fact_sales')
+              field: order_date_key
+              severity: warn
+
+      - name: year
+        tests:
+          - not_null:
+              severity: warn
+      - name: quarter
+        tests:
+          - not_null:
+              severity: warn
+      - name: month
+        tests:
+          - not_null:
+              severity: warn
+      - name: day
+        tests:
+          - not_null:
+              severity: warn
+      - name: day_of_week
+        tests:
+          - not_null:
+              severity: warn
+
+  - name: fact_sales
+    columns:
+      - name: order_line_id
+        tests:
+          - not_null:
+              severity: warn
+      - name: order_id
+        tests:
+          - not_null:
+              severity: warn
+          - relationships:
+              to: ref('dim_order')
+              field: order_id
+              severity: warn
+      - name: order_date_key
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              severity: warn
+      - name: customer_id
+        tests:
+          - not_null:
+              severity: warn
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_id
+              severity: warn
+      - name: store_id
+        tests:
+          - not_null:
+              severity: warn
+          - relationships:
+              to: ref('dim_store')
+              field: store_id
+              severity: warn
+      - name: product_sku
+        tests:
+          - not_null:
+              severity: warn
+          - relationships:
+              to: ref('dim_product')
+              field: product_sku
+              severity: warn
+      - name: qty
+      - name: unit_price
+        tests:
+          - not_null:
+              severity: warn
+      - name: discount_percent
+        tests:
+          - not_null:
+              severity: warn
+      - name: line_amount
