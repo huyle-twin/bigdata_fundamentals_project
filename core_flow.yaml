@@ -1,0 +1,91 @@
+id: core_flow
+namespace: bigdata_fundamentals_midterm_project
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{ kv('GCP_CREDS') }}"
+      projectId: "bigdata-fundamentals-project"
+      location: "us"
+      bronze_bucket: "gs://bronze_bucket_gdgsd"
+      silver_bucket: "gs://silver_bucket_gdgsd"
+
+inputs:
+  - id: day
+    type: STRING
+    required: true
+    # type: SELECT
+    # displayName: Select day
+    # values: ["1","2","3","4","5","6","7","8","9","10","11","12","13","14"]
+
+variables:
+  raw_file: "day_{{inputs.day}}_raw.csv" # files to be downloaded from data source
+  raw_data: "{{outputs.get_rawdata.outputFiles['day_' ~ inputs.day ~ '_raw.csv']}}" # where we'll save the downloaded raw files
+  bronze_gcs_file: "gs://bronze_bucket_gdgsd/{{ vars.raw_file }}"
+  # silver_file: "day_{{inputs.day}}_silver"
+  # silver_data: "{{outputs.process_data.outputFiles['day_' ~ inputs.day ~ '_silver']}}"
+  cleaned_file: "data/cleaned/data_day_{{ inputs.day }}.parquet"
+  gcs_silver: "gs://silver_bucket_gdgsd/data_day_{{ inputs.day }}.parquet"
+
+tasks:
+  - id: get_rawdata
+    type: io.kestra.plugin.scripts.shell.Commands
+    outputFiles:
+      - "*.csv"
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - wget -qO- https://github.com/huyle-twin/raw_data/releases/download/v1.0.0/{{render(vars.raw_file)}} > {{render(vars.raw_file)}}
+      # https://github.com/huyle-twin/raw_data/releases/download/v1.0.0/day_1_raw.csv
+
+
+
+  - id: upload_to_bronze_bucket
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{render(vars.raw_data)}}"
+    to: "{{render(vars.bronze_gcs_file)}}"
+
+
+  - id: process_raw_data
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    inputFiles:
+      input.csv: "{{ outputs.get_rawdata.outputFiles['day_' ~ inputs.day ~ '_raw.csv'] }}"
+    env:
+      INPUT_CSV: "input.csv"
+      OUTPUT_PARQUET: "{{ vars.cleaned_file }}"   # data/cleaned/data_day_{{ inputs.day }}.parquet
+    commands:
+      - |
+        set -e
+        # materialize script
+        cat > processing_tested.py <<'PY'
+        {{ read('processing_tested.py') }}
+        PY
+        sed -i 's/\r$//' processing_tested.py || true
+
+        # chạy xử lý
+        python processing_tested.py "$INPUT_CSV" "$OUTPUT_PARQUET"
+
+        # xác nhận file đã được tạo
+        if [ ! -f "$OUTPUT_PARQUET" ]; then
+          echo "Expected file not found: $OUTPUT_PARQUET"
+          echo "Listing files for debug:"; find . -maxdepth 4 -type f | sort
+          exit 1
+        fi
+
+        # copy ra tên phẳng trong CWD để expose rõ ràng
+        cp "$OUTPUT_PARQUET" "data_day_{{ inputs.day }}.parquet"
+        ls -la
+    outputFiles:
+      - "data_day_*.parquet"
+
+  - id: upload_to_silver_bucket
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{ (outputs.process_raw_data.outputFiles | values | first) }}"
+    to: "{{ vars.gcs_silver }}"
+
+
+  - id: purge_files
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+    disabled: true
