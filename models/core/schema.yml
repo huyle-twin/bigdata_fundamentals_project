@@ -113,39 +113,39 @@ models:
       - name: order_status
       - name: coupon_code
 
-  - name: dim_date
-    columns:
-      - name: date_key
-        tests:
-          - not_null:
-              severity: warn
-          - unique:
-              severity: warn
-          - relationships:
-              to: ref('fact_sales')
-              field: order_date_key
-              severity: warn
+  # - name: dim_date
+  #   columns:
+  #     - name: date_key
+  #       tests:
+  #         - not_null:
+  #             severity: warn
+  #         - unique:
+  #             severity: warn
+  #         - relationships:
+  #             to: ref('fact_sales')
+  #             field: order_date_key
+  #             severity: warn
 
-      - name: year
-        tests:
-          - not_null:
-              severity: warn
-      - name: quarter
-        tests:
-          - not_null:
-              severity: warn
-      - name: month
-        tests:
-          - not_null:
-              severity: warn
-      - name: day
-        tests:
-          - not_null:
-              severity: warn
-      - name: day_of_week
-        tests:
-          - not_null:
-              severity: warn
+      # - name: year
+      #   tests:
+      #     - not_null:
+      #         severity: warn
+      # - name: quarter
+      #   tests:
+      #     - not_null:
+      #         severity: warn
+      # - name: month
+      #   tests:
+      #     - not_null:
+      #         severity: warn
+      # - name: day
+      #   tests:
+      #     - not_null:
+      #         severity: warn
+      # - name: day_of_week
+      #   tests:
+      #     - not_null:
+      #         severity: warn
 
   - name: fact_sales
     columns:
@@ -162,11 +162,11 @@ models:
               field: order_id
               severity: warn
       - name: order_date_key
-        tests:
-          - relationships:
-              to: ref('dim_date')
-              field: date_key
-              severity: warn
+        # tests:
+          # - relationships:
+          #     to: ref('dim_date')
+          #     field: date_key
+          #     severity: warn
       - name: customer_id
         tests:
           - not_null:

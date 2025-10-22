@@ -4,10 +4,10 @@ version: 2
 sources:
   - name: staging
     database: bigdata-fundamentals-project
-    schema: test # dataset
+    schema: gold # dataset
 
     tables:
-      - name: test_table # table
+      - name: cleaned_table # table
 
 models:
   - name: stg_sales
