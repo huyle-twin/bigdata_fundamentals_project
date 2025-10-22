@@ -1,0 +1,40 @@
+id: flow_scheduler
+namespace: bigdata_fundamentals_midterm_project
+
+tasks:
+  - id: loop_days
+    type: io.kestra.plugin.core.flow.ForEach
+    values: ["1","2","3","4","5","6","7","8","9","10","11","12","13","14"]
+    # concurrent: 1  # chạy tuần tự cho chắc chắn
+    tasks:
+      - id: run_subflow
+        type: io.kestra.plugin.core.flow.Subflow
+        namespace: bigdata_fundamentals_midterm_project
+        flowId: core_flow
+        wait: true
+        inputs:
+          day: "{{ taskrun.value }}"   # truyền đúng giá trị day cho subflow
+
+  - id: create_table_bigquery
+    type: io.kestra.plugin.gcp.bigquery.Query
+    sql: |
+      CREATE OR REPLACE EXTERNAL TABLE `gold.cleaned_table`
+      OPTIONS (
+        format = 'PARQUET',
+        uris = ['gs://silver_bucket_gdgsd/data_day_*.parquet']
+      );
+
+triggers:
+  - id: auto_run
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "37 15 * * 3"
+
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{ kv('GCP_CREDS') }}"
+      projectId: "bigdata-fundamentals-project"
+      location: "us"
+      bronze_bucket: "gs://bronze_bucket_gdgsd"
+      silver_bucket: "gs://silver_bucket_gdgsd"
